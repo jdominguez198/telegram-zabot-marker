@@ -1,0 +1,36 @@
+name: "marker_test"
+on:
+  repository_dispatch:
+    types:
+      - marker_test
+jobs:
+  automation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Random Sleep
+        run: sleep $(shuf -i 1-300 -n 1)
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: get auth file
+        env:
+          TOKEN: ${{ secrets.repo_token }}
+          AUTH_REPOSITORY: ${{ secrets.auth_repository }}
+        run: |
+          curl \
+            -H "Authorization: token ${TOKEN}" \
+            -H 'Accept: application/vnd.github.v3.raw' \
+            -O -L https://api.github.com/repos/${AUTH_REPOSITORY}/contents/auth && \
+          curl \
+            -H "Authorization: token ${TOKEN}" \
+            -H 'Accept: application/vnd.github.v3.raw' \
+            -O -L https://api.github.com/repos/${AUTH_REPOSITORY}/contents/secret && \
+          curl \
+            -H "Authorization: token ${TOKEN}" \
+            -H 'Accept: application/vnd.github.v3.raw' \
+            -O -L https://api.github.com/repos/${AUTH_REPOSITORY}/contents/state
+      - uses: addnab/docker-run-action@v3
+        with:
+          image: weibeld/ubuntu-telegram-cli
+          options: -v ${{ github.workspace }}:/root/.telegram-cli
+          run: |
+            bin/telegram-cli -W -e "msg ZABot /summary today" > /dev/null 2>&1
